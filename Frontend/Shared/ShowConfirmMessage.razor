@@ -1,0 +1,26 @@
+﻿@using Radzen
+
+<div align="center">
+    <div align ="center">
+        <RadzenText TextStyle="TextStyle.Body1" Class="my-4">@Message</RadzenText>
+    </div>
+
+    <br />
+
+    <div align="center">
+        <RadzenButton Click="@(() => SubmitForm())" Text="Confirm" ButtonStyle="ButtonStyle.Success" />
+        <RadzenButton Click="@(() => Cancel())" Text="Cancel" ButtonStyle="ButtonStyle.Danger" />
+    </div>
+</div>
+
+@code {
+    [CascadingParameter] BlazoredModalInstance BlazoredModal { get; set; } = default!;
+    [Parameter] public String Message { get; set; }
+
+    private async Task Cancel() => await BlazoredModal.CancelAsync();
+
+    private async Task SubmitForm()
+    {
+        await BlazoredModal.CloseAsync(ModalResult.Ok());
+    }
+}

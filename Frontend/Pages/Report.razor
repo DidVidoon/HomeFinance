@@ -1,0 +1,115 @@
+﻿@page "/report"
+@using Frontend.Services;
+@using Frontend.ViewModel;
+@using Radzen
+@inject HttpClient http;
+
+
+<div>
+    <RadzenCard>
+        <div class="align-items-center d-flex">
+            <RadzenText TextStyle="TextStyle.H6" style="width: 9rem; margin-right: 0.5rem; margin-left: 1rem" TagName="TagName.H2">Report for the:</RadzenText>
+            <RadzenRadioButtonList @bind-Value=@isDayReportSelect TValue="bool" Orientation="Orientation.Horizontal" style="width: 5rem; margin-right: 0.5rem">
+                <Items>
+                    <RadzenRadioButtonListItem Text="Day" Value="@true" />
+                    <RadzenRadioButtonListItem Text="Month" Value="@false" />
+                </Items>
+            </RadzenRadioButtonList>
+
+            <RadzenText TextStyle="TextStyle.H6" style="width: 4rem; margin-right: 0.5rem" TagName="TagName.H2">Date 1:</RadzenText>
+            <RadzenDatePicker @bind-Value=@date DateFormat="d">
+                <FooterTemplate>
+                    <RadzenButton Click=@OnTodayClick Text="Today" class="w-100" />
+                </FooterTemplate>
+            </RadzenDatePicker>
+
+            <RadzenText TextStyle="TextStyle.H6" style="width: 4rem; margin-right: 0.5rem; margin-left: 1rem" TagName="TagName.H2">Date 2:</RadzenText>
+            <RadzenDatePicker Disabled=isDayReportSelect @bind-Value=@date2 DateFormat="d">
+                <FooterTemplate>
+                    <RadzenButton Click=@OnTodayClick2 Text="Today" class="w-100" />
+                </FooterTemplate>
+            </RadzenDatePicker>
+
+            <RadzenButton Click="@(() => ShowReport())" Text="Success" ButtonStyle="ButtonStyle.Success" style="width: 8rem; margin-right: 0.5rem; margin-left: 1rem" />
+        </div>
+    </RadzenCard>
+</div>
+<div>
+    <RadzenCard class="d-flex">
+        <RadzenText TextStyle="TextStyle.H6" style="width: 13rem; margin-right: 0.2rem; margin-left: 0.2rem" TagName="TagName.H2">Total income: @totalIncome,</RadzenText>
+        <RadzenText TextStyle="TextStyle.H6" style="width: 13rem; margin-right: 0.2rem; margin-left: 0.2rem" TagName="TagName.H2">consumption: @totalConsumption,</RadzenText>
+        <RadzenText TextStyle="TextStyle.H6" style="width: 13em; margin-right: 0.2rem; margin-left: 0.2rem" TagName="TagName.H2">balance: @balance.</RadzenText>
+    </RadzenCard>
+</div>
+<div>
+    <RadzenCard>
+        <div>
+            <RadzenDataGrid AllowFiltering="true" AllowColumnResize="true" FilterMode="FilterMode.Advanced" AllowSorting="true" PageSize="20" AllowPaging="true"
+                            PagerHorizontalAlign="HorizontalAlign.Left" ShowPagingSummary="true"
+                            SelectionMode="DataGridSelectionMode.Single" @bind-Value=@selectedOperations
+                            Data="@operations" TItem="OperationViewModel" ColumnWidth="300px" LogicalFilterOperator="LogicalFilterOperator.Or">
+                <Columns>
+                    <RadzenDataGridColumn TItem="OperationViewModel" Property="Date" Title="Date:" FormatString="{0:d}" TextAlign="TextAlign.Center" Width="40px" />
+                    <RadzenDataGridColumn TItem="OperationViewModel" Property="Income" Title="Income:" TextAlign="TextAlign.Center" Width="40px" />
+                    <RadzenDataGridColumn TItem="OperationViewModel" Property="GoalOfOperation" Title="Description:" Width="320px" />
+                </Columns>
+            </RadzenDataGrid>
+        </div>
+    </RadzenCard>
+</div>
+
+@code {
+    [CascadingParameter] public IModalService Modal { get; set; }
+    private List<OperationViewModel> operations = new();
+    private OperationService _operationService;
+    private BalanceService _balanceService;
+    private IList<OperationViewModel> selectedOperations;
+    private bool isDayReportSelect = true;
+    private bool isReportDone = false;
+    private DateTime date = DateTime.Today;
+    private DateTime date2 = DateTime.Today;
+    private decimal totalIncome;
+    private decimal totalConsumption;
+    private decimal balance;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _balanceService = new BalanceService(http);
+        _operationService = new OperationService(http);
+        await ShowReport();
+    }
+
+    private async Task ShowReport()
+    {
+        TransactionResultViewModel transactionResultViewModel;
+
+        if (isDayReportSelect == true)
+            transactionResultViewModel = await _balanceService.GetDailyBalance(date);
+        else
+            transactionResultViewModel = await _balanceService.GetMounthBalance(date, date2);
+
+        if (transactionResultViewModel.ListOfOperations.Count == 0)
+        {
+            var parameters = new ModalParameters()
+                .Add(nameof(ShowConfirmMessage.Message), "No transactions found.");
+            var editForm = Modal.Show<ShowConfirmMessage>("", parameters);
+        }
+        else
+        {
+            totalIncome = transactionResultViewModel.TotalIncome;
+            totalConsumption = transactionResultViewModel.TotalConsumption;
+            balance = transactionResultViewModel.Balance;
+            operations = transactionResultViewModel.ListOfOperations;
+        }
+    }
+
+    async Task OnTodayClick()
+    {
+        date = DateTime.Now;
+    }
+
+    async Task OnTodayClick2()
+    {
+        date2 = DateTime.Now;
+    }
+}

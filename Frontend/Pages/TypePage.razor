@@ -1,0 +1,118 @@
+﻿@page "/type"
+@using Frontend.Services;
+@using Frontend.ViewModel;
+@using Radzen
+@inject HttpClient http;
+
+<RadzenText TextStyle="TextStyle.H4" TagName="TagName.H1" Class="my-3">
+    <strong>Types of operations:</strong>
+</RadzenText>
+
+<div>
+    <RadzenCard>
+        <div>
+            @if (types.Count == 0)
+            {
+                <p><em>Loading...</em></p>
+            }
+            else
+            {
+                <RadzenButton Click="@(() => ShowAddNewType())" Text="Add New" ButtonStyle="ButtonStyle.Success" />
+                @if (selectedTypes == null)
+                    isDisabled = true;
+                else
+                    isDisabled = false;
+                <RadzenButton Disabled=isDisabled Click="@(() => ShowEditType(selectedTypes[0]))" Text="Edit" ButtonStyle="ButtonStyle.Warning" />
+                <RadzenButton Disabled=isDisabled Click="@(() => DeleteType(selectedTypes[0].Id))" Text="Delete" ButtonStyle="ButtonStyle.Danger" />
+                <RadzenButton Disabled=isDisabled Click="@ClearSelection" Text="Clear Selection" ButtonStyle="ButtonStyle.Info" />
+
+                <br />
+                <br />
+
+                <RadzenDataGrid AllowFiltering="true" AllowColumnResize="true" FilterMode="FilterMode.Advanced" AllowSorting="true" PageSize="20" AllowPaging="true"
+                            PagerHorizontalAlign="HorizontalAlign.Left" ShowPagingSummary="true"
+                            SelectionMode="DataGridSelectionMode.Single" @bind-Value=@selectedTypes
+                            Data="@types" TItem="TypeOfIncomeViewModel" ColumnWidth="300px" LogicalFilterOperator="LogicalFilterOperator.Or">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="TypeOfIncomeViewModel" Property="Type" Title="Description:" FormatString="{0:d}" TextAlign="TextAlign.Left" Width="40px" />
+                        <RadzenDataGridColumn TItem="TypeOfIncomeViewModel" Property="InAndOutCome" Title="Type:" TextAlign="TextAlign.Left" Width="40px" />
+                    </Columns>
+                </RadzenDataGrid>
+            }
+        </div>
+    </RadzenCard>
+</div>
+
+@code {
+    [CascadingParameter] public IModalService Modal { get; set; }
+    private List<TypeOfIncomeViewModel> types = new();
+    private TypeService _typeService;
+    private IList<TypeOfIncomeViewModel> selectedTypes;
+    private bool isDisabled;
+    TypeOfIncomeViewModel typeOfIncome = new TypeOfIncomeViewModel();
+
+    private async Task GetListType()
+    {
+        types = await _typeService.GetListType();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        _typeService = new TypeService(http);
+        await GetListType();
+    }
+
+    private async Task DeleteType(int id)
+    {
+        var parameters = new ModalParameters()
+            .Add(nameof(ShowConfirmMessage.Message), "Are you sure you want to delete this type?");
+        var editForm = Modal.Show<ShowConfirmMessage>("", parameters);
+        var result = await editForm.Result;
+
+        if(result.Confirmed)
+        {
+            ClearSelection();
+            await _typeService.DeleteTypeAsync(id);
+            await GetListType();
+        }
+    }
+
+    public async Task ShowAddNewType()
+    {
+        var parameters = new ModalParameters()
+            .Add(nameof(AddType.types), types)
+            .Add(nameof(AddType._typeService), _typeService);
+
+        var AddForm = Modal.Show<AddType>("Add new type", parameters);
+
+        var result = await AddForm.Result;
+
+        if (result.Confirmed)
+        {
+            await GetListType();
+        }
+    }
+
+    private async Task ShowEditType(TypeOfIncomeViewModel typeOfIncome)
+    {
+        var parameters = new ModalParameters()
+            .Add(nameof(EditType.types), types)
+            .Add(nameof(EditType._typeService), _typeService)
+            .Add(nameof(EditType.type), typeOfIncome);
+
+        var editForm = Modal.Show<EditType>("Edit type", parameters);
+
+        var result = await editForm.Result;
+
+        if (result.Confirmed)
+        {
+            ClearSelection();
+            await GetListType();
+        }
+    }
+
+    void ClearSelection()
+    {
+        selectedTypes = null;
+    }
+}

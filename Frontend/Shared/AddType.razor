@@ -1,0 +1,47 @@
+﻿@using Frontend.ViewModel
+@using Frontend.Services
+@using Radzen
+
+<div class="simple-form">
+    <RadzenText TextStyle="TextStyle.Subtitle2" TagName="TagName.H3">Description:</RadzenText>
+    <RadzenTextBox @bind-Value=@type.Type Class="w-100" />
+
+    <br />
+    <br />
+
+    <RadzenText TextStyle="TextStyle.Subtitle2" TagName="TagName.H3">Type:</RadzenText>
+    <RadzenRadioButtonList @bind-Value=@type.InAndOutCome TValue="InAndOutComeENum" Orientation="Orientation.Horizontal">
+        <Items>
+            <RadzenRadioButtonListItem Text="Income" Value="@InAndOutComeENum.INCOME" />
+            <RadzenRadioButtonListItem Text="Outcome" Value="@InAndOutComeENum.OUTCOME" />
+        </Items>
+    </RadzenRadioButtonList>
+
+    <br />
+    <br />
+
+    <div align="center">
+        <RadzenButton Click="@(() => AddItem())" Text="Add" ButtonStyle="ButtonStyle.Success" />
+        <RadzenButton Click="@(() => Cancel())" Text="Cancel" ButtonStyle="ButtonStyle.Danger" />
+    </div>
+</div>
+
+@code {
+    [CascadingParameter] BlazoredModalInstance BlazoredModal { get; set; } = default!;
+    [Parameter] public List<TypeOfIncomeViewModel>? types { get; set; }
+    [Parameter] public TypeService? _typeService { get; set; }
+    TypeOfIncomeViewModel type = new TypeOfIncomeViewModel();
+
+    protected override void OnInitialized() => BlazoredModal.SetTitle("Add operation:");
+    private async Task Cancel() => await BlazoredModal.CancelAsync();
+
+    private async Task AddItem()
+    {
+        if (type.Id != 0)
+            type.Type = types.Where(Type => Type.Id == Type.Id).LastOrDefault().Type;
+
+        await _typeService.AddType(type);
+
+        await BlazoredModal.CloseAsync(ModalResult.Ok(type));
+    }
+}

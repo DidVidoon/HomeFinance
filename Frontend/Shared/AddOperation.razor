@@ -1,0 +1,52 @@
+﻿@using Frontend.ViewModel
+@using Frontend.Services
+@using Radzen
+
+<div style="width: 700px;">
+
+    <RadzenText TextStyle="TextStyle.Subtitle2" TagName="TagName.H3">Select Date:</RadzenText>
+    <RadzenDatePicker @bind-Value=@operation.Date DateFormat="d" Class="w-100" />
+
+    <br />
+    <br />
+
+    <RadzenText TextStyle="TextStyle.Subtitle2" TagName="TagName.H3">Amount:</RadzenText>
+    <RadzenNumeric @bind-Value=@operation.Income Class="w-100" />
+
+    <br />
+    <br />
+
+    <RadzenText TextStyle="TextStyle.Subtitle2" TagName="TagName.H3">Goal:</RadzenText>
+    <RadzenDropDown AllowClear="true" TValue="int" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowFiltering="true" Class="w-100"
+                    @bind-Value=@operation.TypeId Placeholder="Select..." Data=@types TextProperty="Type" ValueProperty="Id" />
+
+    <br />
+    <br />
+
+    <div align="center">
+        <RadzenButton Click="@(() => AddItem())" Text="Add" ButtonStyle="ButtonStyle.Success" />
+        <RadzenButton Click="@(() => Cancel())" Text="Cancel" ButtonStyle="ButtonStyle.Danger" />
+    </div>
+</div>
+
+@code {
+    [CascadingParameter] BlazoredModalInstance BlazoredModal { get; set; } = default!;
+    [Parameter] public List<TypeOfIncomeViewModel>? types { get; set; }
+    [Parameter] public OperationService? _operationService { get; set; }
+
+    OperationViewModel operation = new OperationViewModel() { Date = DateTime.Today };
+
+    protected override void OnInitialized() => BlazoredModal.SetTitle("Add operation:");
+
+    private async Task Cancel() => await BlazoredModal.CancelAsync();
+
+    private async Task AddItem()
+    {
+        if (operation.TypeId != 0)
+            operation.GoalOfOperation = types.Where(Type => Type.Id == operation.TypeId).LastOrDefault().Type;
+
+        await _operationService.AddOperation(operation);
+
+        await BlazoredModal.CloseAsync(ModalResult.Ok(operation));
+    }
+}

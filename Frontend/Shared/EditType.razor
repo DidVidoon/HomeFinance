@@ -1,0 +1,44 @@
+﻿@using Frontend.ViewModel
+@using Frontend.Services
+@using Radzen
+
+<div class="simple-form">
+    <RadzenText TextStyle="TextStyle.Subtitle2" TagName="TagName.H3">Description:</RadzenText>
+    <RadzenTextBox @bind-Value=@type.Type Class="w-100" />
+
+    <br />
+    <br />
+
+    <RadzenText TextStyle="TextStyle.Subtitle2" TagName="TagName.H3">Type:</RadzenText>
+    <RadzenRadioButtonList @bind-Value=@type.InAndOutCome TValue="InAndOutComeENum" Orientation="Orientation.Horizontal">
+        <Items>
+            <RadzenRadioButtonListItem Text="Income" Value="@InAndOutComeENum.INCOME" />
+            <RadzenRadioButtonListItem Text="Outcome" Value="@InAndOutComeENum.OUTCOME" />
+        </Items>
+    </RadzenRadioButtonList>
+
+    <br />
+    <br />
+
+    <div align="center">
+        <RadzenButton Click="@(() => SubmitForm())" Text="Confirm" ButtonStyle="ButtonStyle.Success" />
+        <RadzenButton Click="@(() => Cancel())" Text="Cancel" ButtonStyle="ButtonStyle.Danger" />
+    </div>
+</div>
+
+@code {
+    [CascadingParameter] BlazoredModalInstance BlazoredModal { get; set; } = default!;
+    [Parameter] public List<TypeOfIncomeViewModel>? types { get; set; }
+    [Parameter] public TypeService? _typeService { get; set; }
+    [Parameter] public TypeOfIncomeViewModel type { get; set; }
+
+    protected override void OnInitialized() => BlazoredModal.SetTitle("Edit Operation:");
+
+    private async Task Cancel() => await BlazoredModal.CancelAsync();
+
+    private async Task SubmitForm()
+    {
+        await _typeService.UpdateType(type);
+        await BlazoredModal.CloseAsync(ModalResult.Ok<TypeOfIncomeViewModel>(type));
+    }
+}

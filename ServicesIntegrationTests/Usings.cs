@@ -1,0 +1,9 @@
+global using Xunit;
+global using Infrastructure;
+global using Models;
+global using Services;
+global using Microsoft.EntityFrameworkCore;
+global using AutoMapper;
+global using Models.Mapping;
+global using Models.Mapping.Dto;
+global using System.Text;
